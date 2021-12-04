@@ -1,3 +1,4 @@
+Create a .env file with REACT_APP_CLIENT_ID set to your spotify app client ID (can get from https://developer.spotify.com/dashboard/ after creating app).
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
