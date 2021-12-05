@@ -3,6 +3,31 @@ import { makeAutoObservable } from "mobx";
 import toastr from "toastr";
 import Cookies from "js-cookie";
 
+const scope = [
+  "user-follow-modify",
+  "user-follow-read",
+
+  "user-read-playback-position",
+  "user-top-read",
+  "user-read-recently-played",
+
+  "playlist-read-private",
+  "playlist-modify-private",
+  "playlist-modify-public",
+  "playlist-read-collaborative",
+
+  "user-read-playback-state",
+  "user-read-currently-playing",
+  "user-modify-playback-state",
+
+  "user-read-private",
+  "user-read-email",
+  "user-library-read",
+  "user-library-modify",
+
+  "streaming",
+  "app-remote-control",
+];
 const clientID = process.env.REACT_APP_CLIENT_ID;
 const redirect_uri = "http://localhost:3000/callback";
 
@@ -11,6 +36,9 @@ class LogicAndState {
     this.token = "";
     this.likedSongs = [];
     this.selectedSong = null;
+    this.playlistToAddRemovedSongsTo = "";
+
+    this.getPlaylistSongsTemp = [];
     makeAutoObservable(this);
   }
 
@@ -33,36 +61,7 @@ class LogicAndState {
   }
 
   async login() {
-    const redirectUri = getRedirectUrl(
-      clientID,
-      [
-        "user-follow-modify",
-        "user-follow-read",
-
-        "user-read-playback-position",
-        "user-top-read",
-        "user-read-recently-played",
-
-        "playlist-read-private",
-        "playlist-modify-private",
-        "playlist-modify-public",
-        "playlist-read-collaborative",
-
-        "user-read-playback-state",
-        "user-read-currently-playing",
-        "user-modify-playback-state",
-
-        "user-read-private",
-        "user-read-email",
-        "user-library-read",
-        "user-library-modify",
-
-        "streaming",
-        "app-remote-control",
-      ],
-      redirect_uri,
-      false
-    );
+    const redirectUri = getRedirectUrl(clientID, scope, redirect_uri, false);
     if (window.location !== window.parent.location) {
       window.open(redirectUri);
     } else {
@@ -96,7 +95,6 @@ class LogicAndState {
       );
 
       if (res && res.data && res.data.items) {
-        console.log(res.data.items);
         this.likedSongs = res.data.items;
         this.goToNextSong();
       }
@@ -151,20 +149,94 @@ class LogicAndState {
 
   async removeSong() {
     try {
-      // TODO can only get 50 at a time need to check all of them
-      const getUsersPlayListsRes = await axios.get(
-        `https://api.spotify.com/v1/me/playlists?limit=5&name=Not`,
+      await this.addSongToPlaylist();
+      const songToDeleteId = this.selectedSong.uri.split(":")[this.selectedSong.uri.split(":").length - 1];
+      await axios.delete(
+        `https://api.spotify.com/v1/me/tracks`,
         {
           headers: {
             Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
           },
+          data: { ids: [songToDeleteId] },
         }
       );
-      console.log(getUsersPlayListsRes.data);
-    } catch(err) {
+      toastr.success("Removed song successfully.")
+      this.goToNextSong();
+    } catch (err) {
 
     }
+  }
+
+  // https://open.spotify.com/track/1jcSttQBrx05TkPgnB9vZl?si=f0a276e7a3374f6d
+  async addSongToPlaylist() {
+    try {
+      if (!this.playlistToAddRemovedSongsTo) return;
+      await this.getAllSongsFromPlaylistToAddRemovedSongsTo();
+      if (
+        !this.getPlaylistSongsTemp.find((ele) => ele === this.selectedSong.uri)
+      ) {
+        await axios.post(
+          `https://api.spotify.com/v1/playlists/${this.playlistToAddRemovedSongsTo}/tracks`,
+          { uris: [this.selectedSong.uri] },
+          {
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+      this.getPlaylistSongsTemp = [];
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async getAllSongsFromPlaylistToAddRemovedSongsTo() {
+    try {
+      const res = await axios.get(
+        `https://api.spotify.com/v1/playlists/${this.playlistToAddRemovedSongsTo}/tracks?limit=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            "Content-Type": "application/json",
+          },
+          data: { uris: ["spotify:track:1jcSttQBrx05TkPgnB9vZl"] },
+        }
+      );
+      const total = res.data.total;
+      let offset = 0;
+      let promises = [];
+      while (true) {
+        if (total && offset >= total) break;
+        promises.push(this.getItemsInPlaylist(offset));
+        offset += 50;
+      }
+      await Promise.all(promises);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async getItemsInPlaylist(offset) {
+    const res = await axios.get(
+      `https://api.spotify.com/v1/playlists/${this.playlistToAddRemovedSongsTo}/tracks?limit=50&offset=${offset}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+        data: { uris: ["spotify:track:1jcSttQBrx05TkPgnB9vZl"] },
+      }
+    );
+    res.data.items.forEach((ele) =>
+      this.getPlaylistSongsTemp.push(ele.track.uri)
+    );
+  }
+
+  setPlaylistToAddRemovedSongsTo(newValue) {
+    this.playlistToAddRemovedSongsTo = newValue;
   }
 }
 

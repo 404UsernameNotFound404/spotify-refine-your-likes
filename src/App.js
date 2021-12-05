@@ -4,7 +4,7 @@ import { observer } from "mobx-react-lite";
 import { useEffect } from "react";
 import { createTheme } from "@material-ui/core/styles";
 import { ThemeProvider } from "@material-ui/styles";
-import { TokenInput } from "./TokenInput";
+import { LoginAndPlaylistToAddRemovedSongsToInput } from "./LoginAndPlaylistToAddRemovedSongsToInput";
 import { logicAndState } from "./logicAndState";
 import { SongDisplay } from "./SongDisplay";
 import { KeepOrRemoveInput } from "./KeepOrRemoveInput";
@@ -39,7 +39,7 @@ export const App = observer(() => {
       <ThemeProvider theme={theme}>
         <Content>
           <Header />
-          <TokenInput />
+          <LoginAndPlaylistToAddRemovedSongsToInput />
           <SongDisplay />
           <KeepOrRemoveInput />
         </Content>
