@@ -27,7 +27,6 @@ export const LoginAndPlaylistToAddRemovedSongsToInput = observer(() => {
     if (playlistLink.length < 33) return;
     const idAndSearch = playlistLink.substring(34, playlistLink.length - 1);
     const id = idAndSearch.split("?")[0];
-    console.log(id)
 ;    logicAndState.setPlaylistToAddRemovedSongsTo(id);
   }, [playlistLink]);
 
@@ -40,3 +39,5 @@ export const LoginAndPlaylistToAddRemovedSongsToInput = observer(() => {
 });
 
 // https://open.spotify.com/playlist/1Fw6IhYdgy8cxENSChS9iv?si=4ab89b4f0ce143c3
+
+// https://open.spotify.com/playlist/05Vc5hCIkkZCnql6Xt9Qtn?si=ba20a9bfcde8451c

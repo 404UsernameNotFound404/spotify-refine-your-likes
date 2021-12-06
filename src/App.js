@@ -8,6 +8,7 @@ import { LoginAndPlaylistToAddRemovedSongsToInput } from "./LoginAndPlaylistToAd
 import { logicAndState } from "./logicAndState";
 import { SongDisplay } from "./SongDisplay";
 import { KeepOrRemoveInput } from "./KeepOrRemoveInput";
+import { Typography } from "@material-ui/core";
 
 const StyledApp = styled.div`
   width: 100vw;
@@ -22,6 +23,13 @@ const Content = styled.div`
   margin: auto;
 `;
 
+const RefinedAllLikesMessage = styled(Typography)`
+  color: white;
+  width: 100%;
+  text-align: center;
+  padding-top: 25vh;
+`;
+
 const theme = createTheme({
   palette: {
     type: "dark",
@@ -29,10 +37,16 @@ const theme = createTheme({
 });
 
 export const App = observer(() => {
+  const { refinedAllSongs } = logicAndState;
 
   useEffect(() => {
-    logicAndState.initialize();
-  }, [])
+    loginAndGetLikes();
+  }, []);
+
+  const loginAndGetLikes = async () => {
+    await logicAndState.initialize();
+    logicAndState.getLikes();
+  }
 
   return (
     <StyledApp>
@@ -40,8 +54,13 @@ export const App = observer(() => {
         <Content>
           <Header />
           <LoginAndPlaylistToAddRemovedSongsToInput />
-          <SongDisplay />
-          <KeepOrRemoveInput />
+          {!refinedAllSongs ? 
+            <>
+              <SongDisplay />
+              <KeepOrRemoveInput />
+            </> :
+            <RefinedAllLikesMessage>You have refined all your likes, please refresh to page if you would like to refine again from the beginning.</RefinedAllLikesMessage>
+          }
         </Content>
       </ThemeProvider>
     </StyledApp>
